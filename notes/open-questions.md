@@ -1,11 +1,14 @@
-# Open questions
+# Open questions: CarCast / iCarCast
 
-1. **Resolved.** Is the DMG a real UDIF image or a bare zlib stream? It's UDIF: it has a `koly` trailer, and `file` only saw the first zlib chunk.
-2. **The window id `"main"`** was decoded from split immediates at `BIN @ 0x100007218`. The lower 16 bits weren't checked explicitly. Verify with a full disassembly read around `0x100007200-0x100007220`.
-3. **How does "Otwórz ustawienia" open System Settings?** There's no `NSWorkspace.open` import. Is it SwiftUI's `openURL` environment value, or `openWindow`? Look at the `MainView.permissionCard` closures around `0x10000a5a8` / `0x10000a8b0`.
-4. **The exact `maxDelay ≥ minDelay` rule in `normalizeSettings()`** (`0x100002f28-0x100003268`): swap, clamp, or set equal?
-5. **How does `commitDelayFields()` parse input?** Is `replacingOccurrences` a `,`→`.` swap for Polish decimals? What happens with invalid text (revert or ignore)?
-6. **What does the `NSEvent` local monitor handler do** (`0x100006b0c`)? It compares `event.window` with the field's window; it probably calls `makeFirstResponder(nil)` on outside clicks. Confirm.
-7. **Mapping of the `MenuBarPanel` closures** (`0x1000109b8`, `0x100010bc0`, `0x100010d8c`) to Start / Stop / Open window / Quit (`NSApp.terminate:`).
-8. **Front insertion vs. append in `appendLog`**: check the `replaceSubrange` arguments at `0x1000028d0` and the earlier array write.
-9. **Relevance of the linked doc** `rPlayAI/carcast-public/docs/icarcast-user-guide.md`. It wasn't fetched: it's outside this session's GitHub scope, and `WebFetch` is denied in `.claude/settings.json`. Nothing in the binary mentions CarCast or rPlay.
+The docs alone can't answer these. Most would need the release binaries (IPA/APK) or a packet capture.
+
+1. **How does an App Store / TestFlight app pass CarPlay accessory authentication** without an MFi auth chip? Software emulation, a licensed certificate, or something else? (ARCHITECTURE W8)
+2. **What exactly did TestFlight builds 1-4 write to saved Wi-Fi profiles** (wrong security type, wrong or empty password)? What does build 6's "check the network first" actually check? (UG:267-280)
+3. **What's the remote-touch transport?** Bluetooth HID pointer, an iAP2 HID descriptor, or something else? Why is Zoom specifically required rather than AssistiveTouch? (UG:121-131)
+4. **How is a receiver authorized for remote touch?** Is "Allow" bound to a cryptographic device identity, or only to the `CarCast-XXXX` name? Can a spoofed name inherit the authorization?
+5. **Where does the persistent device identity live** (Keychain, iCloud Keychain)? What is it: a UUID, a key pair, a MAC-like ID? (docs/ios.md:37)
+6. **What does the Browser screen expose?** Port, protocol, authentication, and whether it listens only while active. (UG:156-157)
+7. **Does the receiver validate AirPlay-push URLs** before fetching them? (UG:141-142)
+8. **Which is right about Personal Hotspot,** `docs/releases.md:54` or the user guide? Presumably the guide, since it's newer and repeats the point consistently.
+9. **What does CarCast Launcher's Accessibility service do** beyond the one tap? What does it collect, and how does it "announce the phone" (mDNS service type)? (UG:224-228)
+10. **Release binaries weren't examined.** They live on GitHub Releases (`ios-ipad-1.0-15`, `ios-ipad-legacy-1.0-15`, `launcher-1.0-beta.1`, `android-0.3.27`), not in the git tree. Analyzing them is the next step if a code-level map is wanted.
