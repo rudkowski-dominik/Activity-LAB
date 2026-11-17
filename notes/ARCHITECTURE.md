@@ -10,6 +10,36 @@
 - Paths are relative to the repo root. The guide is abbreviated **UG** = `docs/icarcast-user-guide.md`; **NG** = `docs/ios-network-guide.md`.
 - The previous analysis (Mac Activity Lab DMG) moved to `notes/mac-activity-lab/`. The two targets aren't related: nothing in either mentions the other.
 
+- **Second evidence source (added later):** 11 screenshots the user took of the installed app and its TestFlight page, cited as `IMG_2138`…`IMG_2148`. They show build 1.0 (17), the in-app Settings and About screens, and the TestFlight release notes for builds 11-17. Claims cited to a screenshot are CONFIRMED by what's on screen. The user's Wi-Fi name and the app's Device ID are redacted below.
+
+---
+
+## 0. Who ships it, and what the installed build shows
+
+| Fact | Evidence | Rating |
+|---|---|---|
+| The TestFlight publisher is **VMLite Corporation**, not "rPlayAI". The GitHub org and the App Store developer account are different names for the same product. The contact listed is a personal Gmail address, not a company domain. | IMG_2144 ("Deweloper: VMLite Corporation") | CONFIRMED |
+| Build **1.0 (17)**, released **2 Nov 2026**, **19.2 MB**, TestFlight expiry **31 Jan 2027 02:25**. Builds 11-16 each expire 63-75 days out. | IMG_2144, IMG_2148, IMG_2147, IMG_2145 | CONFIRMED |
+| The TestFlight description markets it neutrally ("turns your iPhone into car friendly display … navigation, music and phone calls") and doesn't mention CarPlay, AirPlay or Android Auto. That's probably to get through TestFlight review. | IMG_2144 | CONFIRMED (text); GUESS (motive) |
+| VMLite plausibly being an established CarPlay/USB accessory vendor would back up README.md:11 ("code base proven in shipping CarPlay products"). | IMG_2144 + README.md:11 | GUESS |
+| **Browser screen server:** HTTPS on **port 8081** and WebSocket on **port 8888**, both configurable. The user is told to join the iPhone's Personal Hotspot and open `https://172.20.10.1:8081`. No password or pairing is shown in the UI. | IMG_2140, IMG_2139, IMG_2138 | CONFIRMED (ports, URL); GUESS (no auth) |
+| **Device ID** is formatted like a MAC address (`EA:B0:…:C4`, redacted). It's a locally administered unicast MAC (first octet `0xEA` has bit 1 set), i.e. a generated fake hardware ID. CarPlay identifies accessories by a MAC-style device ID, which is how "each device is its own car". | IMG_2142 | CONFIRMED (format); GUESS (purpose) |
+| The car name suffix (`CarCast-9CB4`) **doesn't** match the Device ID's last bytes, so the name is generated separately. | IMG_2143, IMG_2142 | CONFIRMED |
+| "Screen 1920 × 1014" reported in About on an **iPhone**, with Resolution = "Fit this screen". That's not the iPhone's native resolution, so the app scales its own screen to a 1920-wide car canvas. | IMG_2142 | CONFIRMED (value); GUESS (scaling) |
+| Mode toggles as installed: CarPlay **on**, Android Auto **on**, CarPlay Ultra off, Browser screen off, AirPlay **off**, AirPlay push off (greyed out), **AirPlay control on**. | IMG_2138 | CONFIRMED (this device's state) |
+| Home screen with no Wi-Fi: "Not on Wi-Fi. Tap This iPhone to use CarPlay here." The app offers This iPhone even on cellular. | IMG_2143 | CONFIRMED |
+
+### Build history (TestFlight "What to test")
+
+| Build | Change | Evidence |
+|---|---|---|
+| 11 | Portrait, night mode, driving position, CarPlay Ultra (iOS 26+), 100+ logos, Play sound here, **Wi-Fi for CarPlay** screen, "**This iPhone away from Wi-Fi uses your saved network with Personal Hotspot on**", Android Auto auto-discovery via launcher, Reset All Settings | IMG_2148 |
+| 12 | Pinch-zoom on maps; video playback ("the screen device needs internet"); Stop-after-Connect fix | IMG_2147 |
+| 13 | Video playback buffering fixes; **Android Auto now on by default** alongside CarPlay | IMG_2147 |
+| 14 | AirPlay on the iPad (PiP/split/full), **control the iPhone from the iPad** (needs Zoom), mirror toolbar, AirPlay push, faster Connect, TarPlay for Tesla, "the iPhone's Personal Hotspot **can't** start CarPlay" | IMG_2146 |
+| 16 | Audio-race crash fixes (5 + 3 reports from build 14); background crashes; Ultra force-disabled once; **This iPhone and Connect need iOS 17+** on the source iPhone (iOS 15/16 can still be the screen); first-mirror black-screen fix; layout fix | IMG_2145 |
+| 17 | "Fixed: …" (truncated in the screenshot) | IMG_2144 |
+
 ---
 
 ## 1. What it does (3 sentences)
@@ -34,7 +64,8 @@ No source exists, so these are the **user-facing and network-facing** entry poin
 | E6 | **Outbound client: Android Auto** to the phone's head unit server on **TCP 5277** | UG:216-237 | CONFIRMED. iCarCast is the *client*; the Android phone listens (UG:226-233). |
 | E7 | **Companion app: CarCast Launcher (Android APK)** | UG:224-228 | CONFIRMED. Uses an Android Accessibility service to tap "Start head unit server" for the user, and "announces the phone on the network" (GUESS: mDNS). |
 | E8 | **iOS Shortcuts automation**: auto-open on charger or Bluetooth | UG:246-249; NG:105-109 | CONFIRMED. An external trigger; the app can't start itself. |
-| E9 | **Browser screen** (iPhone): CarPlay shown in a web browser on another device | UG:156-157 | CONFIRMED that it exists. GUESS: an embedded HTTP/WebSocket server that streams the CarPlay frames. A server-side surface with no documented auth. |
+| E9 | **Browser screen** (iPhone): CarPlay shown in a web browser on another device | UG:156-157; IMG_2140, IMG_2138 | CONFIRMED: an embedded **HTTPS server on :8081** and **WebSocket on :8888** (both configurable), reached at `https://172.20.10.1:8081` over the iPhone's Personal Hotspot. GUESS: page and control over HTTPS, frames over the WebSocket, and a self-signed certificate (no domain to issue a real one for). No auth is shown. |
+| E10 | **AirPlay control** toggle: taps on the mirror are forwarded to the source iPhone | IMG_2138, IMG_2146 | CONFIRMED. A separate mode switch from AirPlay; it was **on** on the user's device. |
 
 ---
 
@@ -142,7 +173,7 @@ flowchart LR
 |---|---|---|---|
 | W1 | **Shipped bug that corrupted users' saved Wi-Fi networks.** TestFlight builds 1-4 "could change a saved Wi-Fi network" (typically café or store Wi-Fi) when This iPhone was used. Afterwards the iPhone can't join it, asks for a password the network doesn't have, and *Forget This Network* doesn't help until the user also does *Forget This Car*. The vendor says builds 6+ "never change a network". This follows from Flow 2: the app hands iOS Wi-Fi credentials that overwrite the system's saved profile for that SSID. | UG:267-280; NG:84-95 | CONFIRMED (symptom and fix); GUESS (root cause) |
 | W2 | **The app handles the user's real Wi-Fi password and pushes it into the iOS system Wi-Fi config.** It's stored in the Keychain "on this iPhone only". A wrong value "would replace your real one". This is a powerful side effect for a third-party app. | UG:86-88, UG:182-183; NG:41-43 | CONFIRMED |
-| W3 | **Contradiction about Personal Hotspot.** The release notes say iOS 1.0 works "over Wi-Fi or the iPhone's Personal Hotspot", but the user guide repeatedly says Personal Hotspot **doesn't** work. | docs/releases.md:54 vs UG:22-23, UG:82, UG:243; NG:13-16 | CONFIRMED (docs disagree) |
+| W3 | **The vendor contradicts itself on Personal Hotspot**, across four sources. (a) The release notes say iOS 1.0 works over Personal Hotspot. (b) Build 11 says "This iPhone away from Wi-Fi uses your saved network with Personal Hotspot on". (c) Build 17's in-app Settings text still says the CarPlay network is used "away from it with Personal Hotspot on", and the Browser screen *requires* the hotspot. (d) Build 14 says "the iPhone's Personal Hotspot can't start CarPlay", and the user guide says it doesn't work. GUESS on the reconciliation: (b) was an attempt to make This iPhone work off-Wi-Fi by advertising the *saved* SSID while the hotspot is up. It didn't work reliably and was walked back in (d), but the UI text wasn't updated. The hotspot is still used for the Browser screen. | docs/releases.md:54; IMG_2148; IMG_2140; IMG_2146; UG:22-23, UG:82, UG:243 | CONFIRMED (contradiction); GUESS (history) |
 | W4 | **Cross-device input injection via Accessibility Zoom.** A receiver on the LAN can drive the source iPhone (taps, Home, App Switcher, Siri, Lock). Authorization is per screen and remembered, and is automatic for screens started with Connect. On a shared network, a spoofed `CarCast-XXXX` name is a phishing and hijack angle. The docs don't describe how screens are authenticated. | UG:121-131 | CONFIRMED (capability); GUESS (risk) |
 | W5 | **Android Auto head unit server exposed on the LAN without auth.** Android Auto's developer-mode head unit server listens on TCP 5277; anyone on the same Wi-Fi or hotspot can connect as a "car". The docs suggest using the phone's hotspot or home Wi-Fi but don't warn about this. | UG:222-233, UG:265 | CONFIRMED (port and dev mode); GUESS (exposure) |
 | W6 | **Android Accessibility service used to auto-click another app's UI** (the launcher taps "Start head unit server"). It's disclosed, but it's the pattern Google Play restricts. The launcher is distributed only as an APK. | UG:226-228 | CONFIRMED |
@@ -151,7 +182,10 @@ flowchart LR
 | W9 | **Third-party car-brand trademarks bundled.** The default logo is **LEXUS**, and 114 brand logos ship in the app. | UG:103; docs/releases.md:44; README.md:57 | CONFIRMED (bundled); GUESS (licensing) |
 | W10 | **Location permission requested only to read the SSID.** It's legitimate: iOS gates SSID access behind location. But users see a location prompt for a "screen" app. | UG:43; NG:23, NG:44-45 | CONFIRMED |
 | W11 | **Receiver fetches pushed-video URLs itself** when it's online ("Other apps' videos need internet on this screen"). The receiver makes outbound requests to URLs supplied by any AirPlay sender on the LAN. | UG:141-142; README.md:80 | CONFIRMED (behaviour); GUESS (risk) |
-| W12 | **Browser screen**: CarPlay streamed to "a web browser on another device". This implies a web server on the iPhone; no auth or pairing is documented. | UG:156-157 | CONFIRMED (feature); GUESS (server, no auth) |
+| W12 | **Browser screen = an HTTPS server (:8081) plus a WebSocket server (:8888) on the iPhone**, streaming the live CarPlay screen (maps, messages, calls) to any browser that reaches it. No password or pairing appears in the settings. Anyone else on the same hotspot or network who knows the URL could probably watch, and maybe send touches. | UG:156-157; IMG_2140, IMG_2138 | CONFIRMED (server and ports); GUESS (no auth, exposure) |
+| W16 | **Docs are behind the shipped app.** The guide says Android Auto is "off by default" (UG:19, UG:218), but since build 13 it's **on by default** (IMG_2147, IMG_2138). The guide doesn't mention the **iOS 17+ requirement** for This iPhone and Connect added in build 16 (IMG_2145); it still says iOS 15+ (UG:21). | UG:19, :21, :218 vs IMG_2147, IMG_2145 | CONFIRMED |
+| W17 | **Publisher-name split.** The GitHub org is "rPlayAI", the TestFlight developer is "VMLite Corporation", and the contact is a personal Gmail address. The TestFlight description avoids naming CarPlay. Together with W8 (emulating an MFi head unit), this looks like the app is presented as a generic "car display" to get past Apple review. | IMG_2144; README.md | CONFIRMED (facts); GUESS (motive) |
+| W18 | **Android Auto on by default** means the receiver may try to connect to Android phones' head unit servers without the user asking for that mode. | IMG_2147 | CONFIRMED (default); GUESS (impact) |
 | W13 | **Time-bombed Android builds**, which stop working 90 days after build. Unrelated to iCarCast but part of the same product. | README.md:124; docs/releases.md:20, :27, :38, :48 | CONFIRMED |
 | W14 | **Hardcoded secrets:** none. The only embedded identifier is the public TestFlight invite `mgpX2urq`, which is meant to be shared. Port 5277 is Android Auto's standard. | UG:29; README.md:3 | CONFIRMED |
 | W15 | **Dead or stale content:** `docs/ios.md:52` says to sideload "when one is posted", while UG:31-35 and releases.md already link the posted IPAs. Small doc drift. | docs/ios.md:52 vs UG:31-35 | CONFIRMED |
