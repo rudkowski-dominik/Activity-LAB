@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(./**)",
+      "Write(./notes/**)",
+      "Edit(./notes/**)",
+      "Bash(file:*)",
+      "Bash(strings:*)",
+      "Bash(sha256sum:*)",
+      "Bash(hexdump:*)",
+      "Bash(od:*)",
+      "Bash(7z l:*)",
+      "Bash(otool:*)",
+      "Bash(llvm-objdump:*)",
+      "Bash(nm:*)",
+      "Bash(binwalk:*)"
+    ],
+    "deny": [
+      "Write(./target/**)",
+      "Edit(./target/**)",
+      "Bash(open ./target/*)",
+      "Bash(hdiutil attach:*)",
+      "Bash(chmod +x ./target/*)",
+      "Bash(./target/*)"
+    ]
+  }
+}
