@@ -1,27 +1,23 @@
 {
+  "model": "claude-opus-5-5",
   "permissions": {
     "allow": [
-      "Read(./**)",
-      "Write(./notes/**)",
+      "Read(./target/**)",
       "Edit(./notes/**)",
       "Bash(file:*)",
       "Bash(strings:*)",
-      "Bash(sha256sum:*)",
-      "Bash(hexdump:*)",
-      "Bash(od:*)",
-      "Bash(7z l:*)",
-      "Bash(otool:*)",
-      "Bash(llvm-objdump:*)",
-      "Bash(nm:*)",
-      "Bash(binwalk:*)"
+      "Bash(xxd:*)",
+      "Bash(grep:*)",
+      "Bash(rg:*)"
     ],
     "deny": [
-      "Write(./target/**)",
       "Edit(./target/**)",
-      "Bash(open ./target/*)",
-      "Bash(hdiutil attach:*)",
-      "Bash(chmod +x ./target/*)",
-      "Bash(./target/*)"
+      "Read(./.env)",
+      "Read(~/.ssh/**)",
+      "WebFetch",
+      "WebSearch",
+      "Bash(curl:*)",
+      "Bash(wget:*)"
     ]
   }
 }
